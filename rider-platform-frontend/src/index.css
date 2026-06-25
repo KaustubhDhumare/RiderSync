@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+
+@theme {
+  --color-primary: #22C55E;
+  --color-secondary: #16A34A;
+  --color-background: #0F172A;
+  --color-surface: #1E293B;
+  --color-textMain: #F8FAFC;
+  --color-textMuted: #94A3B8;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --radius-xl: 16px;
+}
