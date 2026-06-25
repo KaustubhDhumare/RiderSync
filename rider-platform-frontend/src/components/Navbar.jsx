@@ -23,8 +23,8 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-textMuted hover:text-textMain transition-colors">Features</a>
-            <a href="#how-it-works" className="text-textMuted hover:text-textMain transition-colors">How it Works</a>
+            <a href="/#features" className="text-textMuted hover:text-textMain transition-colors">Features</a>
+            <a href="/#how-it-works" className="text-textMuted hover:text-textMain transition-colors">How it Works</a>
             <div className="flex items-center space-x-4 ml-4 border-l border-surface pl-8">
               <Link to="/login" className="text-textMain hover:text-primary font-medium transition-colors">
                 Log In
@@ -47,8 +47,8 @@ const Navbar = () => {
       {/* Mobile Drawer */}
       {isOpen && (
         <div className="md:hidden bg-surface border-b border-surface/50 px-4 pt-2 pb-6 space-y-4 shadow-xl">
-          <a href="#features" className="block text-textMuted hover:text-textMain py-2">Features</a>
-          <a href="#how-it-works" className="block text-textMuted hover:text-textMain py-2">How it Works</a>
+          <a href="/#features" className="block text-textMuted hover:text-textMain py-2">Features</a>
+          <a href="/#how-it-works" className="block text-textMuted hover:text-textMain py-2">How it Works</a>
           <div className="pt-4 flex flex-col gap-3">
             <Link to="/login" className="block text-center text-textMain bg-background py-3 rounded-xl border border-surface">
               Log In
