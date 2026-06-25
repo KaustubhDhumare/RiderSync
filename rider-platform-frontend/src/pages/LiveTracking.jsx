@@ -1,7 +1,7 @@
 // src/pages/LiveTracking.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Map, ArrowRight, Activity, Users, MapPin, Search } from 'lucide-react';
+import { Map as MapIcon, ArrowRight, Activity, Users, MapPin, Search } from 'lucide-react';
 
 const LiveTracking = () => {
   const [roomCode, setRoomCode] = useState('');
@@ -37,7 +37,7 @@ const LiveTracking = () => {
           
           <div className="mb-6">
             <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
-              <Map className="h-7 w-7 text-primary" />
+              <MapIcon className="h-7 w-7 text-primary" />
             </div>
             <h2 className="text-2xl font-bold text-textMain mb-2">Join a Private Ride</h2>
             <p className="text-textMuted">Have a room code from a friend? Enter it below to sync your location and join the map.</p>
