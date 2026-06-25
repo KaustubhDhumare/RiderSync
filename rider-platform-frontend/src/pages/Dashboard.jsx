@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Map, Activity, Clock, PlusCircle, ArrowRight, Route } from 'lucide-react';
+import { Map as MapIcon, Activity, Clock, PlusCircle, ArrowRight, Route } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -9,7 +9,7 @@ const Dashboard = () => {
 
   const stats = [
     { title: "Total Rides", value: "24", icon: Route, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { title: "Active Rooms", value: "2", icon: Map, color: "text-primary", bg: "bg-primary/10" },
+    { title: "Active Rooms", value: "2", icon: MapIcon, color: "text-primary", bg: "bg-primary/10" },
     { title: "Distance (km)", value: "1,240", icon: Activity, color: "text-purple-500", bg: "bg-purple-500/10" },
     { title: "Hours Logged", value: "56", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" }
   ];
@@ -82,7 +82,7 @@ const Dashboard = () => {
           <h2 className="text-xl font-bold text-textMain">Quick Actions</h2>
           <div className="bg-gradient-to-br from-surface to-background border border-surface rounded-2xl p-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors"></div>
-            <Map className="h-8 w-8 text-primary mb-4" />
+            <MapIcon className="h-8 w-8 text-primary mb-4" />
             <h3 className="text-lg font-bold text-textMain mb-2">Join by Code</h3>
             <p className="text-sm text-textMuted mb-4">Have an invite code from a friend? Enter it here to join instantly.</p>
             <div className="flex gap-2">
