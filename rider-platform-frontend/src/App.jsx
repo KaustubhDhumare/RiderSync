@@ -21,6 +21,7 @@ import RideHistory from "./pages/RideHistory";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import LiveTracking from "./pages/LiveTracking";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="*" element={<NotFound />} />  
             </Route>
 
             <Route element={<ProtectedRoute />}>

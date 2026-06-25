@@ -3,22 +3,44 @@ import { useContext, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+
+
+  // const onSubmit = async (data) => {
+  //   setIsLoading(true);
+  //   // Simulate API call
+  //   setTimeout(() => {
+  //     login({ id: 1, name: 'Kaustubh', email: data.email }, 'fake-jwt-token');
+  //     setIsLoading(false);
+  //     navigate('/dashboard');
+  //   }, 1500);
+  // };
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login({ id: 1, name: 'Kaustubh', email: data.email }, 'fake-jwt-token');
+    setApiError(''); // Clear previous errors
+
+    try {
+      // 🔴 Use the real API call instead of the timeout simulation
+      // const response = await authApi.login(data);
+      
+      // For now, we simulate a failed login to test the UI error state
+      throw new Error("Invalid email or password.");
+      
+      // login(response.user, response.token);
+      // navigate('/dashboard');
+    } catch (err) {
+      setApiError(err.message); // Set the error message to display in UI
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1500);
+    }
   };
 
   return (
@@ -33,6 +55,13 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
+          {/* Error Banner Display */}
+          {apiError && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl flex items-center gap-3 text-sm animate-in fade-in">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <p>{apiError}</p>
+            </div>
+          )}
           {/* Email Input */}
           <div>
             <label className="block text-sm font-medium text-textMuted mb-2">Email Address</label>
