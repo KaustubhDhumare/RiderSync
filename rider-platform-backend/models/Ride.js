@@ -32,6 +32,16 @@ const rideSchema = new mongoose.Schema(
       enum: ['public', 'private'], // Must match your frontend <select> values
       default: 'private'
     },
+    status: {
+      type: String,
+      enum: ['upcoming', 'active', 'completed', 'cancelled'],
+      default: 'upcoming'
+    },
+    roomCode: {
+      type: String,
+      required: true,
+      unique: true // Ensures no two rides ever have the same code
+    },
     creator: { 
       type: mongoose.Schema.Types.ObjectId, 
       ref: 'User', 
