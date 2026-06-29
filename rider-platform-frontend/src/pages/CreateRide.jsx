@@ -13,7 +13,7 @@ const CreateRide = () => {
   const onSubmit = async (data) => {
     const newRide = await createRide(data);
     // Navigate to the live tracking/room page once created
-    navigate(`/tracking/${newRide.id}`);
+    navigate(`/tracking/${newRide._id}`);
   };
 
   return (

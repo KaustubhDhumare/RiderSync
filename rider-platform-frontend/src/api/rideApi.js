@@ -1,30 +1,16 @@
-import axiosInstantce from "./axiosInstance";
-
+// src/api/rideApi.js
+import axiosInstance from './axiosInstance';
 
 export const rideApi = {
+  // Post new ride data to the backend
+  createRide: async (rideData) => {
+    const response = await axiosInstance.post('/rides', rideData);
+    return response.data;
+  },
 
-    createRoom: async (rideData)=>{
-        try{
-            const response = await axiosInstantce.post('/ride/create', rideData)
-            return response.data;
-        } catch(error){
-            throw new Error(
-                error.response?.data?.message ||
-                "Ride creation failed. Please try again."
-            );
-        }
-
-    },
-
-    getActiveRides: async ()=>{
-        try{
-            const response = await axiosInstantce.get('/ride/active');
-            return response.data;
-        } catch(error){
-            throw new Error(
-                error.response?.data?.message ||
-                "Failed to fetch active rides."
-            );
-        }
-    }
-}
+  // Fetch all rides for the dashboard
+  getRides: async () => {
+    const response = await axiosInstance.get('/rides');
+    return response.data;
+  }
+};
