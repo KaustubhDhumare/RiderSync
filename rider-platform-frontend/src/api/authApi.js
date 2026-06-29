@@ -1,9 +1,9 @@
-import axiosInstantce from "./axiosInstance";
+import axiosInstance from "./axiosInstance";
 
 export const authApi = {
   register: async (userData) => {
     try {
-      const response = await axiosInstantce.post("/auth/register", userData);
+      const response = await axiosInstance.post("/auth/register", userData);
       return response.data;
     } catch (error) {
       throw new Error(
@@ -15,7 +15,8 @@ export const authApi = {
 
   login: async (userData) => {
     try {
-      const response = await axiosInstantce.post("/auth/login", userData);
+      console.log("CHECKPOINT 2 - Axios Sending:", userData);
+      const response = await axiosInstance.post("/auth/login", userData);
       return response.data;
     } catch (error) {
       throw new Error(

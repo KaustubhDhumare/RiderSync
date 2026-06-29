@@ -3,45 +3,35 @@ import { useContext, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
-
+import { Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { authApi } from '../api/authApi'
 const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-
-  // const onSubmit = async (data) => {
-  //   setIsLoading(true);
-  //   // Simulate API call
-  //   setTimeout(() => {
-  //     login({ id: 1, name: 'Kaustubh', email: data.email }, 'fake-jwt-token');
-  //     setIsLoading(false);
-  //     navigate('/dashboard');
-  //   }, 1500);
-  // };
 
   const onSubmit = async (data) => {
+    console.log("CHECKPOINT 1 - Form Data:", data);
     setIsLoading(true);
     setApiError(''); // Clear previous errors
 
     try {
-      // 🔴 Use the real API call instead of the timeout simulation
-      // const response = await authApi.login(data);
+
+      const response = await authApi.login(data);
       
-      // For now, we simulate a failed login to test the UI error state
-      throw new Error("Invalid email or password.");
-      
-      // login(response.user, response.token);
-      // navigate('/dashboard');
+      login(response.user, response.token);
+      navigate('/dashboard');
     } catch (err) {
       setApiError(err.message); // Set the error message to display in UI
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center px-4 py-12">
@@ -90,11 +80,18 @@ const Login = () => {
                 <Lock className="h-5 w-5 text-textMuted" />
               </div>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 {...register("password", { required: "Password is required" })}
-                className="block w-full pl-10 pr-3 py-3 border border-surface bg-background rounded-xl text-textMain focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                className="block w-full pl-10 pr-10 py-3 border border-surface bg-background rounded-xl text-textMain focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-textMuted hover:text-textMain transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
             {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>}
           </div>

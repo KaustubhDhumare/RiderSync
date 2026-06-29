@@ -1,35 +1,48 @@
 // src/context/RideContext.jsx
-import { createContext, useState } from 'react';
+import { createContext, useState, useCallback } from 'react';
+import { rideApi } from '../api/rideApi';
 
 export const RideContext = createContext();
 
 export const RideProvider = ({ children }) => {
-  const [activeRides, setActiveRides] = useState([]);
+  const [rides, setRides] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Function to create a new ride
   const createRide = async (rideData) => {
     setIsLoading(true);
-    
-    // Simulate API delay
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newRide = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...rideData,
-          status: 'Waiting',
-          members: 1, // The creator
-        };
-        
-        setActiveRides((prev) => [...prev, newRide]);
-        setIsLoading(false);
-        resolve(newRide);
-      }, 1000);
-    });
+    setError(null);
+    try {
+      const newRide = await rideApi.createRide(rideData);
+      
+      // Add the newly created ride to the beginning of our local state array
+      setRides((prevRides) => [newRide, ...prevRides]);
+      
+      return newRide; // Return it so CreateRide.jsx can navigate to the new ID
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to create ride';
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  const fetchRides = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await rideApi.getRides();
+      setRides(data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch rides');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return (
-    <RideContext.Provider value={{ activeRides, isLoading, createRide }}>
+    <RideContext.Provider value={{ rides, isLoading, error, createRide, fetchRides }}>
       {children}
     </RideContext.Provider>
   );

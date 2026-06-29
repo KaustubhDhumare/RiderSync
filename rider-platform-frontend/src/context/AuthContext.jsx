@@ -10,20 +10,24 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Placeholder for checking local storage / validating JWT token
     const token = localStorage.getItem('token');
-    if (token) {
+    const savedUser = localStorage.getItem('user')
+    if (token && savedUser) {
       // Mock user for now
-      setUser({ id: 1, name: 'Rider', email: 'rider@example.com' });
+      // setUser({ id: 1, name: 'Rider', email: 'rider@example.com' });
+      setUser(JSON.parse(savedUser))
     }
     setLoading(false);
   }, []);
 
   const login = (userData, token) => {
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user')
     setUser(null);
   };
 
