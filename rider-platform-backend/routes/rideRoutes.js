@@ -1,6 +1,6 @@
 // routes/rideRoutes.js
 import express from 'express';
-import { createRide, getRides } from '../controllers/rideController.js';
+import { createRide, getRides, getRideById, getUserRides, updateRide, deleteRide } from '../controllers/rideController.js';
 import { protect } from '../middleware/authMiddleware.js'; 
 
 const router = express.Router();
@@ -9,5 +9,14 @@ const router = express.Router();
 router.route('/')
   .post(protect, createRide)
   .get(protect, getRides);
+
+router.route('/my-rides')
+  .get(protect, getUserRides);
+
+router.route('/:id')
+  .get(protect, getRideById)
+  .put(protect, updateRide)   
+  .delete(protect, deleteRide);
+
 
 export default router;

@@ -16,11 +16,11 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // We initialize the socket connection here.
-    // In production, this would be your backend URL (e.g., https://api.ridersync.com)
-    // autoConnect is false so we can manually connect when the user enters a room.
+    console.log("🛠️ SOCKET CONTEXT IS MOUNTING!");
+
+
     const newSocket = io('http://localhost:5000', { 
-      autoConnect: false,
+      autoConnect: true,
       reconnection: true
     });
     
