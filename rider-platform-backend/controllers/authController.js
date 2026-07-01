@@ -3,7 +3,7 @@ import generateToken from "../utils/generateToken.js";
 import bcrypt from "bcryptjs";
 export const registerUser = async (req, resp) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, avatar } = req.body;
     const userExists = await User.findOne({ email });
     if (userExists) {
       return resp.status(400).json({ message: "User already exists" });
@@ -14,6 +14,7 @@ export const registerUser = async (req, resp) => {
       email,
       password,
       phone,
+      avatar
     });
 
     if (!/^[A-Za-z\s]+$/.test(name)) {

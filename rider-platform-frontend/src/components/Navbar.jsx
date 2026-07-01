@@ -1,10 +1,20 @@
 // src/components/Navbar.jsx
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, MapPin } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext'
+import { useContext } from 'react';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useContext(AuthContext); // 🔴 Access user state and logout
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout();
+    setIsOpen(false);
+    navigate('/');
+  };
+
 
   return (
     <nav className="fixed w-full z-50 bg-background/80 backdrop-blur-md border-b border-surface/50">
@@ -12,7 +22,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-20">
           
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 group">
             <div className="bg-primary/10 p-2 rounded-xl group-hover:bg-primary/20 transition-colors">
               <MapPin className="text-primary h-6 w-6" />
             </div>
@@ -26,12 +36,27 @@ const Navbar = () => {
             <a href="/#features" className="text-textMuted hover:text-textMain transition-colors">Features</a>
             <a href="/#how-it-works" className="text-textMuted hover:text-textMain transition-colors">How it Works</a>
             <div className="flex items-center space-x-4 ml-4 border-l border-surface pl-8">
-              <Link to="/login" className="text-textMain hover:text-primary font-medium transition-colors">
-                Log In
-              </Link>
-              <Link to="/register" className="bg-primary hover:bg-secondary text-background font-semibold px-6 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5">
-                Get Started
-              </Link>
+              {user ? (
+                // 🔴 Logged In View
+                <>
+                  <Link to="/dashboard" className="text-textMain hover:text-primary font-medium transition-colors">
+                    Dashboard
+                  </Link>
+                  <button onClick={handleLogout} className="bg-surface hover:bg-surface/80 text-textMain font-semibold px-6 py-2.5 rounded-xl transition-all">
+                    Log Out
+                  </button>
+                </>
+              ) : (
+                // 🔴 Logged Out View
+                <>
+                  <Link to="/login" className="text-textMain hover:text-primary font-medium transition-colors">
+                    Log In
+                  </Link>
+                  <Link to="/register" className="bg-primary hover:bg-secondary text-background font-semibold px-6 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5">
+                    Get Started
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -50,12 +75,25 @@ const Navbar = () => {
           <a href="/#features" className="block text-textMuted hover:text-textMain py-2">Features</a>
           <a href="/#how-it-works" className="block text-textMuted hover:text-textMain py-2">How it Works</a>
           <div className="pt-4 flex flex-col gap-3">
-            <Link to="/login" className="block text-center text-textMain bg-background py-3 rounded-xl border border-surface">
-              Log In
-            </Link>
-            <Link to="/register" className="block text-center bg-primary text-background font-semibold py-3 rounded-xl">
-              Get Started
-            </Link>
+            {user ? (
+              <>
+                <Link to="/dashboard" onClick={() => setIsOpen(false)} className="block text-center text-textMain bg-background py-3 rounded-xl border border-surface">
+                  Dashboard
+                </Link>
+                <button onClick={handleLogout} className="block w-full text-center bg-primary text-background font-semibold py-3 rounded-xl">
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" onClick={() => setIsOpen(false)} className="block text-center text-textMain bg-background py-3 rounded-xl border border-surface">
+                  Log In
+                </Link>
+                <Link to="/register" onClick={() => setIsOpen(false)} className="block text-center bg-primary text-background font-semibold py-3 rounded-xl">
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
