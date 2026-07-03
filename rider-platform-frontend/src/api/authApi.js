@@ -25,4 +25,16 @@ export const authApi = {
       );
     }
   },
+
+  changePassword: async (passwordData) => {
+    // passwordData should be an object: { oldPassword: '...', newPassword: '...' }
+    const response = await axiosInstance.put('/auth/change-password', passwordData);
+    return response.data;
+  },
+
+  updateProfile: async (profileData) => {
+    // Assuming your base routes are set up properly in axiosInstance
+    const response = await axiosInstance.put('/auth/profile', profileData); 
+    return response.data;
+  },
 };

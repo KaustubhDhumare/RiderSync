@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema(
     bio: {
       type: String,
       default: 'Passionate rider ready for the next trail.',
+      maxLength: 200
     },
     avatar: {
     type: String,
@@ -40,7 +41,7 @@ const userSchema = new mongoose.Schema(
 // 2. MIDDLEWARE
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
