@@ -1,6 +1,7 @@
 // src/pages/LiveTracking.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext"; 
 import {
   Map as MapIcon,
   ArrowRight,
@@ -9,21 +10,22 @@ import {
   MapPin,
   Search,
   Loader2,
+  CheckCircle2, 
 } from "lucide-react";
-import { rideApi } from "../api/rideApi"; // 🔴 Import your API!
+import { rideApi } from "../api/rideApi"; 
 
 const LiveTracking = () => {
+  const { user } = useContext(AuthContext); 
   const [roomCode, setRoomCode] = useState("");
-  const [publicRides, setPublicRides] = useState([]); // 🔴 State for real DB data
+  const [publicRides, setPublicRides] = useState([]); 
   const [isLoading, setIsLoading] = useState(true);
+  const [joiningRoom, setJoiningRoom] = useState(null); 
   const navigate = useNavigate();
 
-  // 🔴 Fetch real rides when the page loads
   useEffect(() => {
     const fetchPublicRides = async () => {
       try {
         const allRides = await rideApi.getRides();
-        // Only show rides that were set to 'public' in the Create Ride form
         const visibleRides = allRides.filter(
           (ride) => ride.visibility === "public",
         );
@@ -38,11 +40,44 @@ const LiveTracking = () => {
     fetchPublicRides();
   }, []);
 
-  const handleJoinRoom = (e) => {
+  const handleJoinByCode = async (e) => {
     e.preventDefault();
-    if (roomCode.trim()) {
-      // Redirects to the RideRoom map page
-      navigate(`/tracking/${roomCode}`);
+    if (!roomCode.trim()) return;
+    
+    setJoiningRoom('manual');
+    try {
+      await rideApi.joinRide(roomCode.toUpperCase()); 
+      navigate(`/tracking/${roomCode.toUpperCase()}`);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to join room. Check code.");
+      setJoiningRoom(null);
+    }
+  };
+
+  const handleRideClick = async (ride) => {
+    const currentUserId = user?._id || user?.id;
+    const rideCreatorId = ride.creator?._id || ride.creator;
+
+    const isCreator = rideCreatorId && currentUserId && rideCreatorId.toString() === currentUserId.toString();
+    const isParticipant = ride.participants?.some(p => {
+      const pId = p?._id || p;
+      return pId && currentUserId && pId.toString() === currentUserId.toString();
+    });
+
+    const hasAccess = isCreator || isParticipant;
+    
+    if (hasAccess) {
+      navigate(`/tracking/${ride.roomCode}`);
+    } else {
+      setJoiningRoom(ride.roomCode);
+      try {
+        await rideApi.joinRide(ride.roomCode);
+        navigate(`/tracking/${ride.roomCode}`);
+      } catch (err) {
+        console.error("FULL JOIN ERROR:", err);
+        alert(err.response?.data?.message || "Failed to join ride.");
+        setJoiningRoom(null);
+      }
     }
   };
 
@@ -75,7 +110,7 @@ const LiveTracking = () => {
             </p>
           </div>
 
-          <form onSubmit={handleJoinRoom} className="flex gap-3">
+          <form onSubmit={handleJoinByCode} className="flex gap-3">
             <input
               type="text"
               value={roomCode}
@@ -85,10 +120,10 @@ const LiveTracking = () => {
             />
             <button
               type="submit"
-              disabled={!roomCode.trim()}
-              className="bg-primary hover:bg-secondary text-background font-bold px-6 py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-primary/20"
+              disabled={!roomCode.trim() || joiningRoom === 'manual'}
+              className="bg-primary hover:bg-secondary text-background font-bold px-6 py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-primary/20 shrink-0"
             >
-              Join Map <ArrowRight className="h-5 w-5" />
+              {joiningRoom === 'manual' ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Join Map <ArrowRight className="h-5 w-5" /></>}
             </button>
           </form>
         </div>
@@ -100,7 +135,7 @@ const LiveTracking = () => {
               <Activity className="h-5 w-5 text-primary animate-pulse" /> Active
               Public Rides
             </h2>
-            <button className="text-textMuted hover:text-textMain">
+            <button className="text-textMuted hover:text-textMain transition-colors">
               <Search className="h-5 w-5" />
             </button>
           </div>
@@ -115,48 +150,78 @@ const LiveTracking = () => {
                 No public rides available right now.
               </div>
             ) : (
-              publicRides.map((ride) => (
-                <div
-                  key={ride._id}
-                  className="bg-background border border-surface rounded-xl p-4 hover:border-primary/30 transition-colors group"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-bold text-textMain group-hover:text-primary transition-colors">
-                        {ride.name}
-                      </h3>
-                      <p className="text-sm text-textMuted flex items-center gap-1 mt-1">
-                        {/* 🔴 Merged DB startLocation and destination! */}
-                        <MapPin className="h-3 w-3" /> {ride.startLocation} ➔{" "}
-                        {ride.destination}
-                      </p>
-                    </div>
-                    <span className="bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-full animate-pulse">
-                      LIVE
-                    </span>
-                  </div>
+              publicRides.map((ride) => {
+                const currentUserId = user?._id || user?.id;
+                const rideCreatorId = ride.creator?._id || ride.creator;
 
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-surface/50">
-                    <div className="flex items-center gap-4 text-sm text-textMuted">
-                      {/* 🔴 Reading dynamic participants array length from MongoDB! */}
-                      <span className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />{" "}
-                        {ride.participants?.length || 1}/{ride.maxRiders}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Activity className="h-4 w-4" /> -- km/h
+                const isCreator = rideCreatorId && currentUserId && rideCreatorId.toString() === currentUserId.toString();
+                const isParticipant = ride.participants?.some(p => {
+                  const pId = p?._id || p;
+                  return pId && currentUserId && pId.toString() === currentUserId.toString();
+                });
+
+                const hasAccess = isCreator || isParticipant;
+                const limit = ride.maxRiders || 10;
+                const isFull = ride.participants?.length >= limit;
+
+                return (
+                  <div
+                    key={ride._id}
+                    className="bg-background border border-surface rounded-xl p-4 hover:border-primary/30 transition-colors group"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 pr-4">
+                        <h3 className="font-bold text-textMain group-hover:text-primary transition-colors">
+                          {ride.name}
+                        </h3>
+                        <p className="text-sm text-textMuted flex items-center gap-1 mt-1">
+                          <MapPin className="h-3 w-3 shrink-0 text-primary/70" /> 
+                          <span className="truncate">
+                            {ride.startLocation?.name || ride.startLocation} ➔ {ride.destination?.name || ride.destination}
+                          </span>
+                        </p>
+                      </div>
+                      <span className="bg-primary/10 text-primary text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-full animate-pulse shrink-0">
+                        LIVE
                       </span>
                     </div>
-                    <button
-                      // 🔴 Changed from ride._id to ride.roomCode
-                      onClick={() => navigate(`/tracking/${ride.roomCode}`)}
-                      className="text-sm font-medium text-textMain hover:text-primary transition-colors"
-                    >
-                      Spectate Room
-                    </button>
+
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-surface/50">
+                      <div className="flex items-center gap-4 text-sm text-textMuted">
+                        <span className={`flex items-center gap-1 ${isFull && !hasAccess ? 'text-red-500 font-bold' : ''}`}>
+                          <Users className="h-4 w-4" />{" "}
+                          {ride.participants?.length || 1}/{limit}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Activity className="h-4 w-4" /> {ride.distance || '--'} km
+                        </span>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleRideClick(ride)}
+                        disabled={joiningRoom === ride.roomCode || (!hasAccess && isFull)}
+                        className={`text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                          hasAccess 
+                            ? "bg-surface border border-primary/30 text-primary hover:bg-primary hover:text-background" 
+                            : isFull
+                            ? "bg-surface border border-red-500/20 text-red-500/50 cursor-not-allowed"
+                            : "bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white"
+                        }`}
+                      >
+                        {joiningRoom === ride.roomCode ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : hasAccess ? (
+                          <>Enter Room <ArrowRight className="h-4 w-4" /></>
+                        ) : isFull ? (
+                          "Room Full"
+                        ) : (
+                          <>Join Ride <CheckCircle2 className="h-4 w-4" /></>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

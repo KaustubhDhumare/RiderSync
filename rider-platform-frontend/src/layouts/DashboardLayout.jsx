@@ -10,6 +10,7 @@ import {
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user, logout } = useContext(AuthContext);
+  console.log("MY USER OBJECT CONTAINS:", user);
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -57,14 +58,25 @@ const DashboardLayout = () => {
       {/* User Area & Logout */}
       <div className="px-6 border-t border-surface pt-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="h-10 w-10 rounded-full bg-surface border border-primary flex items-center justify-center text-primary font-bold">
-            {user?.name?.charAt(0) || 'U'}
-          </div>
+          {/* 🔴 DYNAMIC AVATAR LOGIC */}
+          {user?.avatar ? (
+            <img 
+              src={user.avatar} 
+              alt={user.name} 
+              className="h-10 w-10 rounded-full object-cover border border-surface"
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-surface border border-primary flex items-center justify-center text-primary font-bold">
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
+            </div>
+          )}
+          
           <div>
             <p className="text-sm font-bold text-textMain">{user?.name || 'Rider'}</p>
             <p className="text-xs text-textMuted truncate w-32">{user?.email}</p>
           </div>
         </div>
+        
         <button 
           onClick={logout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors font-medium"

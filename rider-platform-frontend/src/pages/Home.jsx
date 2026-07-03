@@ -1,5 +1,7 @@
 // src/pages/Home.jsx
 import { Link } from "react-router-dom";
+import { AuthContext } from '../context/AuthContext';
+import { useContext } from 'react';
 import {
   Shield,
   Zap,
@@ -14,7 +16,10 @@ import {
   Map,
 } from "lucide-react";
 
+
+
 const Home = () => {
+  const { user } = useContext(AuthContext);
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -36,13 +41,13 @@ const Home = () => {
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
             <Link
-              to="/register"
+              to={user ? "/create-ride" : "/register"}
               className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-secondary text-background font-bold rounded-xl transition-all hover:scale-105 hover:shadow-lg hover:shadow-primary/25 flex items-center justify-center gap-2"
             >
               Create Ride Room <ArrowRight className="h-5 w-5" />
             </Link>
             <Link
-              to="/login"
+              to={user ? "/dashboard" : "/login"}
               className="w-full sm:w-auto px-8 py-4 bg-surface hover:bg-surface/80 text-textMain border border-surface font-bold rounded-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
             >
               Join Existing Ride
@@ -190,10 +195,10 @@ const Home = () => {
               and dominate their weekend rides.
             </p>
             <Link
-              to="/register"
+              to={user ? "/create-ride" : "/register"}
               className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-background font-bold rounded-xl hover:bg-secondary transition-all hover:scale-105"
             >
-              Start for Free <ArrowRight className="h-5 w-5" />
+              {user ? "Create New Ride Room" : "Start Your First Ride"} <ArrowRight className="h-5 w-5" />
             </Link>
           </div>
         </div>

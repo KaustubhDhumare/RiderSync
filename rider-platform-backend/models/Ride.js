@@ -8,12 +8,18 @@ const rideSchema = new mongoose.Schema(
       required: [true, 'Please add a ride name'] 
     },
     startLocation: { 
-      type: String, 
-      required: [true, 'Please add a starting location'] 
+      name: { type: String, required: true },
+      coords: {
+        lat: { type: Number, required: true },
+        lng: { type: Number, required: true }
+      }
     },
     destination: { 
-      type: String, 
-      required: [true, 'Please add a destination'] 
+      name: { type: String, required: true },
+      coords: {
+        lat: { type: Number, required: true },
+        lng: { type: Number, required: true }
+      }
     },
     date: { 
       type: String, 
@@ -36,6 +42,14 @@ const rideSchema = new mongoose.Schema(
       type: String,
       enum: ['upcoming', 'active', 'completed', 'cancelled'],
       default: 'upcoming'
+    },
+    distance: {
+      type: Number,
+      default: 0 
+    },
+    duration: {
+      type: Number,
+      default: 0 
     },
     roomCode: {
       type: String,

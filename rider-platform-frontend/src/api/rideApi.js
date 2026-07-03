@@ -35,4 +35,19 @@ export const rideApi = {
     const response = await axiosInstance.delete(`/rides/${id}`);
     return response.data;
   },
+
+  // Add this inside your existing rideApi object
+joinRide: async (roomCode) => {
+    // We pass an empty object {} because it's a POST request without a body payload
+    const response = await axiosInstance.post(`/rides/${roomCode}/join`, {});
+    return response.data;
+  },
+  
+  // Leave a ride room
+  leaveRide: async (roomCode) => {
+    const response = await axiosInstance.post(`/rides/${roomCode}/leave`, {});
+    return response.data;
+  },
+
+
 };
