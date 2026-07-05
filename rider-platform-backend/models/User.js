@@ -30,7 +30,15 @@ const userSchema = new mongoose.Schema(
     avatar: {
     type: String,
     default: "https://api.dicebear.com/9.x/adventurer/svg?seed=Felix"
-  }
+  },
+  totalRides: {
+    type: Number,
+    default: 0
+  },
+  totalDistance: {
+    type: Number,
+    default: 0
+  },
   },
   {
     timestamps: true,

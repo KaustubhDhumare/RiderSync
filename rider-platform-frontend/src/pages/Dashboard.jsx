@@ -27,11 +27,11 @@ const Dashboard = () => {
   };
 
   // Mock stats (You can wire these to real DB aggregations later!)
-  const stats = [
-    { title: "Total Rides", value: userRides.length || "0", icon: Route, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { title: "Active Rooms", value: userRides.filter(r => r.status === 'active').length || "0", icon: MapIcon, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Distance (km)", value: "1,240", icon: Activity, color: "text-purple-500", bg: "bg-purple-500/10" },
-    { title: "Hours Logged", value: "56", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" }
+const stats = [
+    { title: "Total Rides", value: user?.totalRides || 0, icon: Route, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { title: "Active Rooms", value: userRides.filter(r => r.status === 'active').length || 0, icon: MapIcon, color: "text-primary", bg: "bg-primary/10" },
+    { title: "Distance (km)", value: user?.totalDistance ? Number(user.totalDistance).toFixed(1) : "0.0", icon: Activity, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { title: "Hours Logged", value: "--", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" } // We'll do time later
   ];
 
   return (
