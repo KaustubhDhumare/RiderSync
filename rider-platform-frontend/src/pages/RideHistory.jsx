@@ -1,57 +1,39 @@
 // src/pages/RideHistory.jsx
-import { useState } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Search, Filter, Calendar, MapPin, Route, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { RideContext } from '../context/RideContext';
+import { AuthContext } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const RideHistory = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { userRides, fetchUserRides } = useContext(RideContext);
+  const { refreshUser } = useContext(AuthContext);
+  
+  // Check if we just got routed here from a newly completed ride
+  const location = useLocation();
 
-  // Mock data for past rides
-  const pastRides = [
-    {
-      id: "R-9921",
-      name: "Dapoli Hills Weekend Run",
-      date: "Oct 24, 2025",
-      start: "Thane",
-      destination: "Dapoli Hills",
-      distance: "215 km",
-      duration: "4h 30m",
-      status: "Completed",
-      riders: 8
-    },
-    {
-      id: "R-9844",
-      name: "Kasmal Pen Trail",
-      date: "Nov 02, 2025",
-      start: "Thane",
-      destination: "Kasmal Pen",
-      distance: "85 km",
-      duration: "1h 45m",
-      status: "Completed",
-      riders: 4
-    },
-    {
-      id: "R-9710",
-      name: "Morning City Cruise",
-      date: "Nov 15, 2025",
-      start: "Thane",
-      destination: "Marine Drive",
-      distance: "42 km",
-      duration: "1h 10m",
-      status: "Aborted",
-      riders: 2
-    },
-    {
-      id: "R-9650",
-      name: "Night Rider Meetup",
-      date: "Dec 05, 2025",
-      start: "Thane",
-      destination: "Lonavala",
-      distance: "95 km",
-      duration: "2h 00m",
-      status: "Completed",
-      riders: 15
+  useEffect(() => {
+    // 🔴 Fetch the latest rides for the table
+    fetchUserRides();
+
+    // 🔴 If routed from a completed ride, force the AuthContext to refresh stats
+    if (location.state?.refreshStats) {
+      refreshUser();
+      // Clear the state so it doesn't infinitely refresh on reload
+      window.history.replaceState({}, document.title);
     }
-  ];
+  }, [fetchUserRides, refreshUser, location.state]);
+
+  // Only show past rides (Completed or Cancelled)
+  const pastRides = userRides.filter(r => r.status === 'completed' || r.status === 'cancelled');
+
+  // Basic search filter
+  const filteredRides = pastRides.filter(r => 
+    r.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    r.startLocation?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.destination?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -102,74 +84,58 @@ const RideHistory = () => {
                 <th className="px-6 py-4 font-medium">Route</th>
                 <th className="px-6 py-4 font-medium">Metrics</th>
                 <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface">
-              {pastRides.map((ride) => (
-                <tr key={ride.id} className="hover:bg-background/30 transition-colors group">
-                  
-                  {/* Ride Info */}
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-textMain mb-1">{ride.name}</div>
-                    <div className="text-xs text-textMuted flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> {ride.date} • {ride.id}
-                    </div>
-                  </td>
-
-                  {/* Route */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-sm text-textMain mb-1">
-                      <MapPin className="h-4 w-4 text-primary" /> {ride.start}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-textMuted">
-                      <Route className="h-4 w-4 text-red-500" /> {ride.destination}
-                    </div>
-                  </td>
-
-                  {/* Metrics */}
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-bold text-textMain">{ride.distance}</div>
-                    <div className="text-xs text-textMuted">{ride.duration} • {ride.riders} Riders</div>
-                  </td>
-
-                  {/* Status Badge */}
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                      ride.status === 'Completed' 
-                        ? 'bg-primary/10 text-primary border-primary/20' 
-                        : 'bg-red-500/10 text-red-500 border-red-500/20'
-                    }`}>
-                      {ride.status}
-                    </span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-sm font-medium text-primary hover:text-secondary bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
-                      View Details
-                    </button>
-                  </td>
+              {filteredRides.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-8 text-textMuted">No past rides found.</td>
                 </tr>
-              ))}
+              ) : (
+                filteredRides.map((ride) => (
+                  <tr key={ride._id} className="hover:bg-background/30 transition-colors group">
+                    
+                    {/* Ride Info */}
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-textMain mb-1">{ride.name}</div>
+                      <div className="text-xs text-textMuted flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> {ride.date} • {ride.roomCode}
+                      </div>
+                    </td>
+
+                    {/* Route */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-textMain mb-1">
+                        <MapPin className="h-4 w-4 text-primary shrink-0" /> <span className="truncate max-w-[200px]">{ride.startLocation?.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-textMuted">
+                        <Route className="h-4 w-4 text-red-500 shrink-0" /> <span className="truncate max-w-[200px]">{ride.destination?.name}</span>
+                      </div>
+                    </td>
+
+                    {/* Metrics */}
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold text-textMain">{ride.distance} km</div>
+                      <div className="text-xs text-textMuted">{ride.participants?.length || 1} Riders</div>
+                    </td>
+
+                    {/* Status Badge */}
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border uppercase tracking-wider ${
+                        ride.status === 'completed' 
+                          ? 'bg-primary/10 text-primary border-primary/20' 
+                          : 'bg-red-500/10 text-red-500 border-red-500/20'
+                      }`}>
+                        {ride.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-surface bg-background/50 flex items-center justify-between">
-          <p className="text-sm text-textMuted">Showing <span className="font-medium text-textMain">1</span> to <span className="font-medium text-textMain">4</span> of <span className="font-medium text-textMain">24</span> results</p>
-          <div className="flex gap-2">
-            <button className="p-2 rounded-lg border border-surface bg-surface text-textMuted hover:text-textMain disabled:opacity-50 disabled:cursor-not-allowed">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button className="p-2 rounded-lg border border-surface bg-surface text-textMuted hover:text-textMain">
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
       </div>
-
     </div>
   );
 };

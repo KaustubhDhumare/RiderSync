@@ -1,14 +1,34 @@
+// controllers/userController.js
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
 import bcrypt from "bcryptjs";
-export const registerUser = async (req, resp) => {
+
+export const registerUser = async (req, res) => {
   try {
     const { name, email, password, phone, avatar } = req.body;
+    
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return resp.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User already exists" });
     }
 
+    // 🔴 THE FIX: Validate EVERYTHING before touching the database
+    if (!/^[A-Za-z\s]+$/.test(name)) {
+      return res.status(400).json({ message: "Name must contain only letters." });
+    }
+    
+    if (!/^[0-9]{10}$/.test(phone)) {
+      return res.status(400).json({ message: "Phone must be exactly 10 digits." });
+    }
+    
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 chars, 1 uppercase, and 1 number.",
+      });
+    }
+
+    // Now it is safe to save to the database
     const user = await User.create({
       name,
       email,
@@ -17,75 +37,66 @@ export const registerUser = async (req, resp) => {
       avatar
     });
 
-    if (!/^[A-Za-z\s]+$/.test(name)) {
-      return res
-        .status(400)
-        .json({ message: "Name must contain only letters." });
-    }
-    if (!/^[0-9]{10}$/.test(phone)) {
-      return res
-        .status(400)
-        .json({ message: "Phone must be exactly 10 digits." });
-    }
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Password must be at least 8 chars, 1 uppercase, and 1 number.",
-        });
-    }
-
     if (user) {
-      resp.status(201).json({
-        uesr: {
+      // 🔴 THE FIX: Send the FULL profile back to React
+      res.status(201).json({
+        user: { // Fixed typo from 'uesr'
           id: user._id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
+          avatar: user.avatar,
+          bio: user.bio,
+          totalRides: user.totalRides || 0,
+          totalDistance: user.totalDistance || 0,
+          createdAt: user.createdAt
         },
         token: generateToken(user._id),
       });
     } else {
-      resp.status(400).json({ message: "invalid user data received" });
+      res.status(400).json({ message: "Invalid user data received" });
     }
   } catch (error) {
     console.error("BACKEND REGISTRATION ERROR: ", error);
-    resp.status(500).json({
+    res.status(500).json({
       message: "server error during registration",
       error: error.message,
     });
   }
 };
 
-export const loginUser = async (req, resp) => {
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email }).select("+password");
 
-    const isPasswordMatch =
-      user && user.password
+    const isPasswordMatch = user && user.password
         ? await bcrypt.compare(password, user.password)
         : false;
+        
     if (user && isPasswordMatch) {
-      resp.json({
+      // 🔴 THE FIX: Send the FULL profile back to React
+      res.json({
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
-          avatar: user.avatar
+          phone: user.phone,
+          avatar: user.avatar,
+          bio: user.bio,
+          totalRides: user.totalRides || 0,
+          totalDistance: user.totalDistance || 0,
+          createdAt: user.createdAt
         },
         token: generateToken(user._id),
       });
     } else {
-      resp.status(401).json({ message: "invalid email or password" });
+      res.status(401).json({ message: "invalid email or password" });
     }
   } catch (error) {
     console.error("BACKEND LOGIN ERROR: ", error);
-    resp
-      .status(500)
-      .json({ message: "server error during login", error: error.message });
+    res.status(500).json({ message: "server error during login", error: error.message });
   }
 };
 
@@ -105,15 +116,12 @@ export const changePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // 🔴 THE FIX: Use raw bcrypt to compare the strings instead of a custom model method
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     
     if (!isMatch) {
       return res.status(401).json({ message: "The old password you entered is incorrect." });
     }
 
-    // Assign the plain text password directly. 
-    // Your User.js pre('save') hook will automatically hash this.
     user.password = newPassword;
     await user.save();
 
@@ -135,7 +143,6 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // If they are changing their email, check if it's already taken by someone else
     if (req.body.email && req.body.email !== user.email) {
       const emailExists = await User.findOne({ email: req.body.email });
       if (emailExists) {
@@ -143,11 +150,9 @@ export const updateProfile = async (req, res) => {
       }
     }
 
-    // Update fields (fallback to existing if not provided)
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
     
-    // Bio can be empty, so we explicitly check if it was sent in the request body
     if (req.body.bio !== undefined) {
       user.bio = req.body.bio;
     }
@@ -158,16 +163,51 @@ export const updateProfile = async (req, res) => {
 
     const updatedUser = await user.save();
 
+    // 🔴 Ensure updateProfile also returns everything so Context updates properly
     res.json({
-      _id: updatedUser._id,
+      id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
-      bio: updatedUser.bio,
       phone: updatedUser.phone,
+      avatar: updatedUser.avatar,
+      bio: updatedUser.bio,
+      totalRides: updatedUser.totalRides || 0,
+      totalDistance: updatedUser.totalDistance || 0,
+      createdAt: updatedUser.createdAt,
       message: "Profile successfully updated."
     });
   } catch (error) {
     console.error("Update Profile Error:", error);
     res.status(500).json({ message: "Server error while updating profile." });
+  }
+};
+
+
+
+// @desc    Get user profile data (Fresh fetch)
+// @route   GET /api/users/profile
+// @access  Private
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+      res.json({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.avatar,
+        bio: user.bio,
+        totalRides: user.totalRides || 0,
+        totalDistance: user.totalDistance || 0,
+        createdAt: user.createdAt
+      });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.error("Get Profile Error:", error);
+    res.status(500).json({ message: "Server error while fetching profile." });
   }
 };

@@ -1,5 +1,6 @@
 // controllers/rideController.js
 import Ride from "../models/Ride.js";
+import User from "../models/User.js"; // 🔴 Required for the statistics engine
 
 const generateRoomCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -116,7 +117,7 @@ export const getUserRides = async (req, res) => {
   }
 };
 
-// @desc    Update ride
+// @desc    Update ride (and calculate stats upon completion)
 // @route   PUT /api/rides/:id
 // @access  Private
 export const updateRide = async (req, res) => {
@@ -134,14 +135,37 @@ export const updateRide = async (req, res) => {
         .json({ message: "Not authorized to edit this ride" });
     }
 
+    // 🔴 THE STATISTICS ENGINE
+    // If status is changing to 'completed', and we haven't done the math yet
+    if (req.body.status === 'completed' && ride.status !== 'completed' && !ride.statsCalculated) {
+      
+      const distanceToAdd = ride.distance || 0;
+      
+      // Get all unique users in the room (Participants + Creator)
+      const userIds = new Set([
+        ...ride.participants.map(id => id.toString()), 
+        ride.creator.toString()
+      ]);
+
+      // Atomically add +1 Ride and +Distance to every user in the room
+      await User.updateMany(
+        { _id: { $in: Array.from(userIds) } },
+        { $inc: { totalRides: 1, totalDistance: distanceToAdd } }
+      );
+
+      // Lock the ride so it never calculates these stats again
+      ride.statsCalculated = true;
+    }
+
     const updatedRide = await Ride.findByIdAndUpdate(
       req.params.id,
-      req.body, 
-      { new: true },
+      { ...req.body, statsCalculated: ride.statsCalculated }, 
+      { new: true }
     );
 
     res.json(updatedRide);
   } catch (error) {
+    console.error("Update Ride Error:", error);
     res.status(500).json({ message: "Failed to update ride" });
   }
 };
@@ -197,7 +221,7 @@ export const getUserStats = async (req, res) => {
   }
 };
 
-// new @desc    Join a ride room
+// @desc    Join a ride room
 // @route   POST /api/rides/:id/join
 // @access  Private
 export const joinRide = async (req, res) => {
@@ -210,6 +234,11 @@ export const joinRide = async (req, res) => {
 
     if (!ride) {
       return res.status(404).json({ message: "Ride room not found." });
+    }
+
+    // 🔴 Block joining if the ride is completed or cancelled
+    if (ride.status === 'completed' || ride.status === 'cancelled') {
+      return res.status(400).json({ message: "This ride has already ended." });
     }
 
     // 2. If the user is the creator, they don't need to join. Just let them in.
@@ -235,7 +264,6 @@ export const joinRide = async (req, res) => {
 
     res.json(updatedRide);
   } catch (error) {
-    // We send error.message to the frontend so you can see exactly why it failed instead of a generic alert.
     console.error("Join Ride Fatal Error:", error);
     res.status(500).json({ message: error.message || "Server error while joining ride." });
   }

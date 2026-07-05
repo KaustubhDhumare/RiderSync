@@ -51,6 +51,10 @@ io.on('connection', (socket) => {
     // socket.to().emit broadcasts to everyone in the room EXCEPT the sender
     socket.to(data.roomCode).emit('locationUpdate', data);
   });
+  socket.on('rideCompleted', (roomCode) => {
+    // Blast a message to everyone in the room to trigger the redirect
+    io.to(roomCode).emit('rideCompleted');
+  });
 
   // When a user leaves the page
   socket.on('leaveRoom', (roomCode) => {
