@@ -28,25 +28,27 @@ const userSchema = new mongoose.Schema(
       maxLength: 200
     },
     avatar: {
-    type: String,
-    default: "https://api.dicebear.com/9.x/adventurer/svg?seed=Felix"
-  },
-  totalRides: {
-    type: Number,
-    default: 0
-  },
-  totalDistance: {
-    type: Number,
-    default: 0
-  },
+      type: String,
+      default: "https://api.dicebear.com/9.x/adventurer/svg?seed=Felix"
+    },
+    totalRides: {
+      type: Number,
+      default: 0
+    },
+    totalDistance: {
+      type: Number,
+      default: 0
+    },
+    // 🔴 PHASE 1: FORGOT PASSWORD FIELDS
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
   },
   {
     timestamps: true,
   }
 );
 
-
-// 2. MIDDLEWARE
+// MIDDLEWARE
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     return;
@@ -55,6 +57,6 @@ userSchema.pre('save', async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// 3. COMPILE MODEL
+// COMPILE MODEL
 const User = mongoose.model('User', userSchema);
 export default User;

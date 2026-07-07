@@ -1,38 +1,44 @@
 // src/pages/Dashboard.jsx
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { RideContext } from '../context/RideContext'; // 🔴 Import RideContext
-import { Map as MapIcon, Activity, Clock, PlusCircle, ArrowRight, Route, Loader2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom'; // 🔴 Import useNavigate
+import { RideContext } from '../context/RideContext'; 
+import { Map as MapIcon, Activity, Clock, PlusCircle, ArrowRight, Route, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'; // 🔴 Added Chevron icons
+import { Link, useNavigate } from 'react-router-dom'; 
 
 const Dashboard = () => {
-  const { user } = useContext(AuthContext);
-  // 🔴 Pull in the real data states
+  const { user, refreshUser } = useContext(AuthContext);
   const { userRides, fetchUserRides, isLoading } = useContext(RideContext); 
   const navigate = useNavigate();
 
-  // State for the "Join by Code" input on the right column
   const [joinCode, setJoinCode] = useState('');
+  
+  // 🔴 Pagination State for Dashboard
+  const [currentPage, setCurrentPage] = useState(1);
+  const ridesPerPage = 4;
 
-  // 🔴 Fetch the user's specific rides when the dashboard loads
   useEffect(() => {
     fetchUserRides();
-  }, [fetchUserRides]);
+    refreshUser(); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Handle joining a room directly from the quick action card
   const handleJoinByCode = () => {
     if (joinCode.trim()) {
       navigate(`/tracking/${joinCode.toUpperCase()}`);
     }
   };
 
-  // Mock stats (You can wire these to real DB aggregations later!)
-const stats = [
+  const stats = [
     { title: "Total Rides", value: user?.totalRides || 0, icon: Route, color: "text-blue-500", bg: "bg-blue-500/10" },
     { title: "Active Rooms", value: userRides.filter(r => r.status === 'active').length || 0, icon: MapIcon, color: "text-primary", bg: "bg-primary/10" },
     { title: "Distance (km)", value: user?.totalDistance ? Number(user.totalDistance).toFixed(1) : "0.0", icon: Activity, color: "text-purple-500", bg: "bg-purple-500/10" },
-    { title: "Hours Logged", value: "--", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" } // We'll do time later
   ];
+
+  // 🔴 Pagination Logic
+  const indexOfLastRide = currentPage * ridesPerPage;
+  const indexOfFirstRide = indexOfLastRide - ridesPerPage;
+  const currentRides = userRides.slice(indexOfFirstRide, indexOfLastRide);
+  const totalPages = Math.ceil(userRides.length / ridesPerPage);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -49,7 +55,7 @@ const stats = [
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((stat, idx) => (
           <div key={idx} className="bg-surface p-6 rounded-2xl border border-surface/50 hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-xl group">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${stat.bg} group-hover:scale-110 transition-transform`}>
@@ -73,49 +79,76 @@ const stats = [
             </Link>
           </div>
           
-          <div className="bg-surface rounded-2xl border border-surface/50 overflow-hidden min-h-[200px]">
-            {/* 🔴 Conditional Rendering based on real data */}
+          <div className="bg-surface rounded-2xl border border-surface/50 overflow-hidden min-h-[200px] flex flex-col">
             {isLoading ? (
-              <div className="flex justify-center items-center h-full py-12">
+              <div className="flex justify-center items-center flex-1 py-12">
                 <Loader2 className="animate-spin h-8 w-8 text-primary" />
               </div>
             ) : userRides.length === 0 ? (
-              <div className="text-center py-12 px-4">
+              <div className="text-center py-12 px-4 flex-1">
                 <p className="text-textMuted mb-4">You haven't created or joined any rides yet.</p>
                 <Link to="/create-ride" className="text-primary hover:underline font-medium">Create your first ride</Link>
               </div>
             ) : (
-              userRides.map((ride, idx) => (
-                <div key={ride._id} className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-background/50 transition-colors gap-4 ${idx !== userRides.length - 1 ? 'border-b border-surface' : ''}`}>
-                  <div className="flex items-start sm:items-center gap-4">
-                    {/* Status Dot */}
-                    <div className={`w-3 h-3 rounded-full mt-1.5 sm:mt-0 ${
-                      ride.status === 'active' ? 'bg-primary animate-pulse' : 
-                      ride.status === 'completed' ? 'bg-green-500' : 'bg-surface border-2 border-textMuted'
-                    }`}></div>
-                    
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-textMain">{ride.name}</h4>
-                        {/* 🔴 Added Visibility Badge */}
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-background border border-surface text-textMuted">
-                          {ride.visibility}
-                        </span>
+              <>
+                <div className="flex-1">
+                  {/* 🔴 Only map over the current page's rides */}
+                  {currentRides.map((ride, idx) => (
+                    <div key={ride._id} className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-background/50 transition-colors gap-4 ${idx !== currentRides.length - 1 ? 'border-b border-surface' : ''}`}>
+                      <div className="flex items-start sm:items-center gap-4">
+                        <div className={`w-3 h-3 rounded-full mt-1.5 sm:mt-0 ${
+                          ride.status === 'active' ? 'bg-primary animate-pulse' : 
+                          ride.status === 'completed' ? 'bg-green-500' : 'bg-surface border-2 border-textMuted'
+                        }`}></div>
+                        
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-textMain">{ride.name}</h4>
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-background border border-surface text-textMuted">
+                              {ride.visibility}
+                            </span>
+                          </div>
+                          <p className="text-sm text-textMuted mt-0.5">
+                            {ride.date} • Code: <span className="text-primary font-mono font-medium">{ride.roomCode}</span>
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-sm text-textMuted mt-0.5">
-                        {ride.date} • Code: <span className="text-primary font-mono font-medium">{ride.roomCode}</span>
-                      </p>
+                      
+                      <button 
+                        onClick={() => navigate(`/tracking/${ride.roomCode}`)}
+                        className="w-full sm:w-auto px-4 py-2 text-sm font-medium border border-surface rounded-lg hover:bg-surface text-textMain transition-colors shrink-0"
+                      >
+                        {ride.status === 'active' ? 'Re-join Map' : 'View Room'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 🔴 Dashboard Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="px-5 py-3 border-t border-surface bg-background/30 flex items-center justify-between mt-auto">
+                    <span className="text-xs text-textMuted">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-1.5 rounded-md border border-surface bg-surface text-textMuted hover:text-textMain disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-1.5 rounded-md border border-surface bg-surface text-textMuted hover:text-textMain disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                  
-                  <button 
-                    onClick={() => navigate(`/tracking/${ride.roomCode}`)}
-                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium border border-surface rounded-lg hover:bg-surface text-textMain transition-colors"
-                  >
-                    {ride.status === 'active' ? 'Re-join Map' : 'View Room'}
-                  </button>
-                </div>
-              ))
+                )}
+              </>
             )}
           </div>
         </div>

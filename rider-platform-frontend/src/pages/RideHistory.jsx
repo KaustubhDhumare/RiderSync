@@ -1,39 +1,66 @@
 // src/pages/RideHistory.jsx
 import { useState, useContext, useEffect } from 'react';
-import { Search, Filter, Calendar, MapPin, Route, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Calendar, MapPin, Route, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { RideContext } from '../context/RideContext';
 import { AuthContext } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 
 const RideHistory = () => {
-  const [searchTerm, setSearchTerm] = useState('');
   const { userRides, fetchUserRides } = useContext(RideContext);
   const { refreshUser } = useContext(AuthContext);
   
-  // Check if we just got routed here from a newly completed ride
   const location = useLocation();
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const ridesPerPage = 10;
+
+  // 🔴 Date Filter State
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
   useEffect(() => {
-    // 🔴 Fetch the latest rides for the table
     fetchUserRides();
 
-    // 🔴 If routed from a completed ride, force the AuthContext to refresh stats
     if (location.state?.refreshStats) {
       refreshUser();
-      // Clear the state so it doesn't infinitely refresh on reload
       window.history.replaceState({}, document.title);
     }
   }, [fetchUserRides, refreshUser, location.state]);
 
-  // Only show past rides (Completed or Cancelled)
+  // 🔴 Reset to page 1 whenever the user changes the date filters
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [startDate, endDate]);
+
+  // 1. Get past rides
   const pastRides = userRides.filter(r => r.status === 'completed' || r.status === 'cancelled');
 
-  // Basic search filter
-  const filteredRides = pastRides.filter(r => 
-    r.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    r.startLocation?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.destination?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 2. 🔴 Apply Date Range Filter
+  const filteredRides = pastRides.filter(ride => {
+    if (!startDate && !endDate) return true;
+    
+    // Convert string dates to Date objects for accurate mathematical comparison
+    const rDate = new Date(ride.date);
+    const sDate = startDate ? new Date(startDate) : null;
+    const eDate = endDate ? new Date(endDate) : null;
+
+    if (sDate && rDate < sDate) return false;
+    if (eDate && rDate > eDate) return false;
+    
+    return true;
+  });
+
+  // 3. Apply Pagination to the FILTERED results
+  const indexOfLastRide = currentPage * ridesPerPage;
+  const indexOfFirstRide = indexOfLastRide - ridesPerPage;
+  const currentRides = filteredRides.slice(indexOfFirstRide, indexOfLastRide);
+  const totalPages = Math.ceil(filteredRides.length / ridesPerPage);
+
+  const clearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -44,34 +71,39 @@ const RideHistory = () => {
           <h1 className="text-3xl font-bold text-textMain mb-1">Ride History</h1>
           <p className="text-textMuted">Review your past routes, distances, and track your overall progress.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-surface border border-surface/50 text-textMain font-medium rounded-xl hover:bg-background transition-colors">
-          <Download className="h-4 w-4" /> Export CSV
-        </button>
       </div>
 
-      {/* Filters and Search */}
-      <div className="bg-surface border border-surface/50 rounded-2xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
-        <div className="relative w-full md:w-96">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-textMuted" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search by ride name or location..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2.5 border border-surface bg-background rounded-xl text-textMain focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors text-sm"
-          />
+      {/* 🔴 Functional Date Range Filter */}
+      <div className="bg-surface border border-surface/50 rounded-2xl p-4 flex flex-wrap items-center gap-4 shadow-lg">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-textMuted" />
+          <span className="text-sm font-bold text-textMain uppercase tracking-wider">Filter Dates:</span>
         </div>
         
-        <div className="flex w-full md:w-auto gap-3">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-background border border-surface rounded-xl text-sm font-medium hover:text-primary transition-colors">
-            <Calendar className="h-4 w-4" /> Date Range
-          </button>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-background border border-surface rounded-xl text-sm font-medium hover:text-primary transition-colors">
-            <Filter className="h-4 w-4" /> Filters
-          </button>
+        <div className="flex items-center gap-2">
+          <input 
+            type="date" 
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="bg-background border border-surface rounded-xl px-3 py-2 text-sm text-textMain focus:ring-2 focus:ring-primary/50 outline-none [color-scheme:dark]"
+          />
+          <span className="text-textMuted text-sm font-medium">to</span>
+          <input 
+            type="date" 
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="bg-background border border-surface rounded-xl px-3 py-2 text-sm text-textMain focus:ring-2 focus:ring-primary/50 outline-none [color-scheme:dark]"
+          />
         </div>
+
+        {(startDate || endDate) && (
+          <button 
+            onClick={clearFilters}
+            className="flex items-center gap-1 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 px-3 py-2 rounded-lg transition-colors ml-auto"
+          >
+            <X className="h-3 w-3" /> Clear
+          </button>
+        )}
       </div>
 
       {/* Data Table */}
@@ -87,12 +119,14 @@ const RideHistory = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface">
-              {filteredRides.length === 0 ? (
+              {currentRides.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="text-center py-8 text-textMuted">No past rides found.</td>
+                  <td colSpan="4" className="text-center py-12">
+                    <p className="text-textMuted font-medium">No past rides found in this date range.</p>
+                  </td>
                 </tr>
               ) : (
-                filteredRides.map((ride) => (
+                currentRides.map((ride) => (
                   <tr key={ride._id} className="hover:bg-background/30 transition-colors group">
                     
                     {/* Ride Info */}
@@ -135,6 +169,31 @@ const RideHistory = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {filteredRides.length > 0 && (
+          <div className="px-6 py-4 border-t border-surface bg-background/50 flex items-center justify-between">
+            <p className="text-sm text-textMuted">
+              Showing <span className="font-medium text-textMain">{(currentPage - 1) * ridesPerPage + 1}</span> to <span className="font-medium text-textMain">{Math.min(currentPage * ridesPerPage, filteredRides.length)}</span> of <span className="font-medium text-textMain">{filteredRides.length}</span> results
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-surface bg-surface text-textMuted hover:text-textMain disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-surface bg-surface text-textMuted hover:text-textMain disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

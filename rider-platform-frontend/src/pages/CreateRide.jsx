@@ -5,30 +5,31 @@ import { useNavigate } from 'react-router-dom';
 import { RideContext } from '../context/RideContext.jsx';
 import { MapPin, Navigation, Calendar, Clock, Users, Shield, Loader2, Route, AlertCircle } from 'lucide-react';
 import axios from 'axios';
-import LocationInput from '../components/LocationInput.jsx'; // 🔴 Ensure this path matches your folder structure
+import LocationInput from '../components/LocationInput.jsx'; 
 
 const CreateRide = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const { createRide, isLoading } = useContext(RideContext);
   const navigate = useNavigate();
 
-  // 🔴 NEW: State for our custom location inputs and calculated distance
   const [startLoc, setStartLoc] = useState(null);
   const [destLoc, setDestLoc] = useState(null);
   const [distance, setDistance] = useState(0);
   const [formError, setFormError] = useState('');
 
-  // 🔴 NEW: Calculate exact driving distance using OSRM when both locations are set
+  // 🔴 Calculate tomorrow's date in YYYY-MM-DD format to block past/current dates
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split('T')[0];
+
   useEffect(() => {
     const calculateDistance = async () => {
       if (startLoc && destLoc) {
         try {
-          // OSRM expects Longitude first, then Latitude
           const url = `https://router.project-osrm.org/route/v1/driving/${startLoc.coords.lng},${startLoc.coords.lat};${destLoc.coords.lng},${destLoc.coords.lat}?overview=false`;
           const res = await axios.get(url);
           
           if (res.data.routes && res.data.routes.length > 0) {
-            // Distance is returned in meters, convert to KM
             const km = (res.data.routes[0].distance / 1000).toFixed(1);
             setDistance(Number(km));
           }
@@ -42,25 +43,22 @@ const CreateRide = () => {
   }, [startLoc, destLoc]);
 
   const onSubmit = async (data) => {
-    // 🔴 Validation: Ensure they actually clicked a dropdown suggestion
     if (!startLoc || !destLoc) {
       setFormError("Please select a valid Starting Location and Destination from the dropdown suggestions.");
       return;
     }
     setFormError('');
 
-    // 🔴 Build the exact payload our new Schema expects
     const payload = {
       ...data,
-      startLocation: startLoc, // Sends { name, coords: { lat, lng } }
-      destination: destLoc,    // Sends { name, coords: { lat, lng } }
+      startLocation: startLoc, 
+      destination: destLoc,    
       distance: distance,
-      duration: Number((distance / 60).toFixed(1)) // Estimates duration based on 60km/h average speed
+      duration: Number((distance / 60).toFixed(1)) 
     };
 
     try {
       const newRide = await createRide(payload);
-      // Navigate to the live tracking/room page once created
       navigate(`/tracking/${newRide.roomCode}`);
     } catch (err) {
       setFormError(err.message || "Failed to create ride. Please try again.");
@@ -76,12 +74,10 @@ const CreateRide = () => {
       </div>
 
       <div className="bg-surface border border-surface/50 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
-        {/* Subtle background element */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10"></div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 relative z-10">
           
-          {/* 🔴 NEW: Error Banner */}
           {formError && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
               <AlertCircle className="h-5 w-5 shrink-0" />
@@ -105,7 +101,6 @@ const CreateRide = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 🔴 Replaced static inputs with dynamic LocationInput components */}
               <LocationInput 
                 label="Starting Location"
                 placeholder="Search city, area, or landmark..."
@@ -118,7 +113,6 @@ const CreateRide = () => {
               />
             </div>
 
-            {/* 🔴 FIXED: 128px height (h-32) + hidden overflow to permanently stop scrollbars */}
             <div className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${distance > 0 ? 'grid-rows-[1fr] mt-6' : 'grid-rows-[0fr] mt-0'}`}>
               <div className="overflow-hidden">
                 <div className="flex items-center gap-5 p-5 bg-primary/10 border border-primary/20 rounded-xl w-full shadow-inner">
@@ -149,10 +143,16 @@ const CreateRide = () => {
                   </div>
                   <input
                     type="date"
-                    {...register("date", { required: "Date is required" })}
-                    className="block w-full pl-10 pr-3 py-3 border border-surface bg-background rounded-xl text-textMain focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors focus:outline-none"
+                    min={minDate} // 🔴 UI Lock: Calendar won't let them click past dates
+                    {...register("date", { 
+                      required: "Date is required",
+                      validate: value => value >= minDate || "You cannot schedule a ride in the past. Select tomorrow or later." // 🔴 Logic Lock
+                    })}
+                    className="block w-full pl-10 pr-3 py-3 border border-surface bg-background rounded-xl text-textMain focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors focus:outline-none [color-scheme:dark]"
                   />
                 </div>
+                {/* 🔴 Display validation error message */}
+                {errors.date && <p className="mt-1 text-sm text-red-500">{errors.date.message}</p>}
               </div>
 
               <div>
@@ -167,6 +167,7 @@ const CreateRide = () => {
                     className="block w-full pl-10 pr-3 py-3 border border-surface bg-background rounded-xl text-textMain focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors focus:outline-none"
                   />
                 </div>
+                {errors.time && <p className="mt-1 text-sm text-red-500">{errors.time.message}</p>}
               </div>
 
               <div>

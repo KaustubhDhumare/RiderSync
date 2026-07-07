@@ -37,4 +37,25 @@ export const authApi = {
     const response = await axiosInstance.put('/auth/profile', profileData); 
     return response.data;
   },
+  forgotPassword: async (email) => {
+    try {
+      const response = await axiosInstance.post("/auth/forgotpassword", { email });
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.message || "Failed to send reset link. Please try again."
+      );
+    }
+  },
+  
+  resetPassword: async (token, password) => {
+    try {
+      const response = await axiosInstance.put(`/auth/resetpassword/${token}`, { password });
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.message || "Invalid or expired token. Please request a new link."
+      );
+    }
+  }
 };
