@@ -1,13 +1,15 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 const sendEmail = async (options) => {
   // 1. Create a transporter using Gmail SMTP
   const transporter = nodemailer.createTransport({
-    service: 'Gmail',
+    service: "Gmail",
     auth: {
       user: process.env.EMAIL_USER, // Your Gmail address
       pass: process.env.EMAIL_PASS, // Your generated 16-character App Password
     },
+    connectionTimeout: 10000,
+    socketTimeout: 10000,
   });
 
   // 2. Define the email payload

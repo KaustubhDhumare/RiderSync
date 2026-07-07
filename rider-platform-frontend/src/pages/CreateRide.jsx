@@ -18,9 +18,13 @@ const CreateRide = () => {
   const [formError, setFormError] = useState('');
 
   // 🔴 Calculate tomorrow's date in YYYY-MM-DD format to block past/current dates
-  const tomorrow = new Date();
+const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
+  const minDate = [
+    tomorrow.getFullYear(),
+    String(tomorrow.getMonth() + 1).padStart(2, '0'),
+    String(tomorrow.getDate()).padStart(2, '0'),
+  ].join('-');
 
   useEffect(() => {
     const calculateDistance = async () => {

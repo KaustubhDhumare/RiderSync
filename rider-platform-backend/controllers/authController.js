@@ -14,7 +14,6 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // 🔴 THE FIX: Validate EVERYTHING before touching the database
     if (!/^[A-Za-z\s]+$/.test(name)) {
       return res.status(400).json({ message: "Name must contain only letters." });
     }
@@ -30,7 +29,6 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // Now it is safe to save to the database
     const user = await User.create({
       name,
       email,
@@ -40,9 +38,8 @@ export const registerUser = async (req, res) => {
     });
 
     if (user) {
-      // 🔴 THE FIX: Send the FULL profile back to React
       res.status(201).json({
-        user: { // Fixed typo from 'uesr'
+        user: { 
           id: user._id,
           name: user.name,
           email: user.email,
@@ -78,7 +75,6 @@ export const loginUser = async (req, res) => {
         : false;
         
     if (user && isPasswordMatch) {
-      // 🔴 THE FIX: Send the FULL profile back to React
       res.json({
         user: {
           id: user._id,
@@ -165,7 +161,6 @@ export const updateProfile = async (req, res) => {
 
     const updatedUser = await user.save();
 
-    // 🔴 Ensure updateProfile also returns everything so Context updates properly
     res.json({
       id: updatedUser._id,
       name: updatedUser.name,
@@ -183,8 +178,6 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ message: "Server error while updating profile." });
   }
 };
-
-
 
 // @desc    Get user profile data (Fresh fetch)
 // @route   GET /api/users/profile
@@ -214,31 +207,31 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-
-
 // @desc    Forgot Password - Generates token and sends email
 // @route   POST /api/users/forgotpassword
 // @access  Public
 export const forgotPassword = async (req, res) => {
   try {
+    // 🔴 THE FIX: Prevent NoSQL Injection by enforcing a string
+    if (typeof req.body.email !== "string") {
+      return res.status(400).json({ message: "Please provide a valid email." });
+    }
+
     const user = await User.findOne({ email: req.body.email });
 
     if (!user) {
       return res.status(200).json({ message: "If an account with that email exists, a reset link has been sent." });
     }
 
-    // 1. Generate a random raw token for the URL
     const resetToken = crypto.randomBytes(20).toString('hex');
 
-    // 2. Hash the token and save it to the database for security
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // Expires in exactly 10 minutes
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
 
     await user.save({ validateBeforeSave: false });
 
-    // 3. Construct the reset URL pointing to your React frontend
-    // Change localhost:5173 to whatever port your React app runs on
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    // Ensure your .env has CLIENT_URL set (e.g., CLIENT_URL=http://localhost:5173 for local)
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
     const message = `You are receiving this email because you (or someone else) requested a password reset for your account.\n\nPlease click the following link to reset your password:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.`;
 
@@ -251,7 +244,6 @@ export const forgotPassword = async (req, res) => {
 
       return res.status(200).json({ message: "If an account with that email exists, a reset link has been sent." });
     } catch (emailError) {
-      // If the email fails, destroy the token in the DB so it isn't left hanging
       console.error("Email Error:", emailError);
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
@@ -270,10 +262,8 @@ export const forgotPassword = async (req, res) => {
 // @access  Public
 export const resetPassword = async (req, res) => {
   try {
-    // 1. Re-hash the token from the URL so we can compare it to the DB
     const resetPasswordToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
-    // 2. Find user with that exact token AND ensure it hasn't expired
     const user = await User.findOne({
       resetPasswordToken,
       resetPasswordExpire: { $gt: Date.now() },
@@ -283,10 +273,8 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired reset token." });
     }
 
-    // 3. Set the new password. The Mongoose 'pre-save' hook we built earlier will automatically hash this.
     user.password = req.body.password;
     
-    // 4. Destroy the token fields so they can't be used again
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
@@ -295,6 +283,10 @@ export const resetPassword = async (req, res) => {
     res.status(200).json({ message: "Password updated successfully." });
   } catch (error) {
     console.error(error);
+    // 🔴 THE FIX: Catch specific validation errors (like passwords that are too short) and return a 400
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: "Server error." });
   }
 };
