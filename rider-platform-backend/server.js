@@ -29,8 +29,9 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Update this if your frontend runs on a different port
-    methods: ["GET", "POST"]
+    origin: `${process.env.CLIENT_URL}`, // Update this if your frontend runs on a different port
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
