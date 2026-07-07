@@ -1,4 +1,3 @@
-// controllers/userController.js
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
 import sendEmail from "../utils/sendEmail.js";
