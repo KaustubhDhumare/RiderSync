@@ -2,9 +2,6 @@
 
 A full-stack MERN application built for riders to create, join, and track group rides in real-time. 
 
-**Live Demo:** [Insert Vercel Link Here]
-*(Note: The backend is hosted on a free Render tier. If the app hasn't been used in 15 minutes, the server goes to sleep. **The first API request may take up to 50 seconds to wake it up.** Every request after that will be instant.)*
-
 ## 🛠 Tech Stack
 * **Frontend:** React.js (Vite), Tailwind CSS, React Router
 * **Backend:** Node.js, Express.js
