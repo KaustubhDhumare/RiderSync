@@ -1,6 +1,7 @@
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios'; 
+import { BASE_URL } from '../constants/constants';
 
 export const AuthContext = createContext();
 
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }) => {
       // Strip any accidental quotes from the token that would break backend verification
       token = token.replace(/"/g, '');
 
-      const res = await axios.get('http://localhost:5000/api/auth/profile', {
+      const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

@@ -1,6 +1,7 @@
 // src/context/SocketContext.jsx
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { BASE_URL } from '../constants/constants';
 
 export const SocketContext = createContext();
 
@@ -22,7 +23,7 @@ export const SocketProvider = ({ children }) => {
     if (!socketInitialized.current) {
       console.log("🛠️ SOCKET CONTEXT IS MOUNTING!");
 
-      const newSocket = io('http://localhost:5000', { 
+      const newSocket = io(`${BASE_URL}`, { 
         withCredentials: true,
         transports: ['websocket', 'polling'], 
         autoConnect: true,
