@@ -224,7 +224,7 @@ export const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
 
     if (!user) {
-      return res.status(404).json({ message: "There is no user with that email." });
+      return res.status(200).json({ message: "If an account with that email exists, a reset link has been sent." });
     }
 
     // 1. Generate a random raw token for the URL
@@ -249,7 +249,7 @@ export const forgotPassword = async (req, res) => {
         message: message,
       });
 
-      res.status(200).json({ message: 'Email sent successfully.' });
+      return res.status(200).json({ message: "If an account with that email exists, a reset link has been sent." });
     } catch (emailError) {
       // If the email fails, destroy the token in the DB so it isn't left hanging
       console.error("Email Error:", emailError);

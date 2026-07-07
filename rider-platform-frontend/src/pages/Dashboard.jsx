@@ -134,6 +134,7 @@ const Dashboard = () => {
                       <button 
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
+                        aria-label="Previous page"
                         className="p-1.5 rounded-md border border-surface bg-surface text-textMuted hover:text-textMain disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -141,6 +142,7 @@ const Dashboard = () => {
                       <button 
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
+                        aria-label="Next page"
                         className="p-1.5 rounded-md border border-surface bg-surface text-textMuted hover:text-textMain disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronRight className="h-4 w-4" />
