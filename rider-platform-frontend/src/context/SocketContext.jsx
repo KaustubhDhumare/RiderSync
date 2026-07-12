@@ -22,8 +22,8 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (!socketInitialized.current) {
       console.log("🛠️ SOCKET CONTEXT IS MOUNTING!");
-
-      const newSocket = io(`${BASE_URL}`, { 
+      const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const newSocket = io(socketUrl, { 
         withCredentials: true,
         transports: ['websocket', 'polling'], 
         autoConnect: true,
