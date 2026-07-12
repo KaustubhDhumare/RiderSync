@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
       // Strip any accidental quotes from the token that would break backend verification
       token = token.replace(/"/g, '');
 
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/profile?t=${Date.now()}`, {
+      const res = await axios.get(`${BASE_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

@@ -24,43 +24,51 @@ import LiveTracking from "./pages/LiveTracking";
 import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
     <AuthProvider>
       <RideProvider>
         <SocketProvider>
-          <Toaster />
-          <Router>
-            <Routes>
-              {/* Public Routes */}
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route
-                  path="/reset-password/:token"
-                  element={<ResetPassword />}
-                />
-                <Route path="*" element={<NotFound />} />
-              </Route>
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="*" element={<NotFound />} />  
+            </Route>
 
-              <Route element={<ProtectedRoute />}>
-                <Route element={<DashboardLayout />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  {/* Placeholders for upcoming pages, ensuring the sidebar links don't break */}
-                  <Route path="/create-ride" element={<CreateRide />} />
-                  <Route path="/tracking" element={<LiveTracking />} />
-                  <Route path="/tracking/:roomId" element={<RideRoom />} />
-                  <Route path="/history" element={<RideHistory />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Route>
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                {/* Placeholders for upcoming pages, ensuring the sidebar links don't break */}
+                <Route path="/create-ride" element={<CreateRide />} />
+                <Route
+                  path="/tracking"
+                  element={<LiveTracking />} />
+                <Route
+                  path="/tracking/:roomId"
+                  element={<RideRoom/>}
+                />
+                <Route
+                  path="/history"
+                  element={<RideHistory />} />
+                <Route
+                  path="/profile"
+                  element={<Profile />}
+                />
+                <Route
+                  path="/settings"
+                  element={<Settings />}
+                />
               </Route>
-            </Routes>
-          </Router>
+            </Route>
+          </Routes>
+        </Router>
         </SocketProvider>
       </RideProvider>
     </AuthProvider>

@@ -21,7 +21,6 @@ import {
   X,
   Activity,
 } from "lucide-react";
-import toast from "react-hot-toast";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -103,16 +102,14 @@ const RideRoom = () => {
       socket.emit("joinRoom", roomCode);
       const myId = (user._id || user.id).toString();
 
-      // 1. Listen for ride completion (Completely separate from location updates)
-      socket.on("rideCompleted", () => {
-        toast.success("Ride completed! Routing you to History.");
-        setTimeout(() => {
-          navigate("/history", { state: { refreshStats: true } });
-        }, 1500); // 1.5 second delay so they can read the toast before routing
-      });
-
-      // 2. Listen for location updates
       socket.on("locationUpdate", (data) => {
+        socket.on("rideCompleted", () => {
+          alert(
+            "The creator has marked this ride as complete. Routing you to History.",
+          );
+          // We will call refreshUser when they land on the History page
+          navigate("/history", { state: { refreshStats: true } });
+        });
         setRiders((prev) => {
           if (!data.userId) return prev;
 
@@ -237,7 +234,7 @@ const RideRoom = () => {
     window.addEventListener("beforeunload", handleTabClose);
     return () => window.removeEventListener("beforeunload", handleTabClose);
   }, [roomCode, isCreator]);
-  //old
+//old
   // const handleUpdateStatus = async (newStatus) => {
   //   if (
   //     !window.confirm(
@@ -258,20 +255,14 @@ const RideRoom = () => {
   //   }
   // };
 
+
   const handleUpdateStatus = async (newStatus) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to change this ride to ${newStatus}?`,
-      )
-    )
-      return;
+    if (!window.confirm(`Are you sure you want to change this ride to ${newStatus}?`)) return;
     setIsUpdating(true);
     try {
-      const updatedRide = await rideApi.updateRide(ride._id, {
-        status: newStatus,
-      });
+      const updatedRide = await rideApi.updateRide(ride._id, { status: newStatus });
       setRide(updatedRide);
-
+      
       // 🔴 TELL ALL RIDERS TO GO TO HISTORY
       if (newStatus === "completed") {
         socket.emit("rideCompleted", roomCode);
