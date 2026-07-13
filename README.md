@@ -1,6 +1,9 @@
 # Rider Platform (Live Ride Tracker)
 
-A full-stack MERN application built for riders to create, join, and track group rides in real-time. 
+A full-stack MERN application built for riders to create, join, and track group rides in real-time#. 
+
+# Live Hosted link
+https://rider-sync-iota.vercel.app
 
 ## 🛠 Tech Stack
 * **Frontend:** React.js (Vite), Tailwind CSS, React Router
