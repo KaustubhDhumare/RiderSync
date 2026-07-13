@@ -30,6 +30,7 @@
     "mongodb": "^7.5.0",
     "mongoose": "^9.7.2",
     "nodemailer": "^9.0.3",
+    "resend": "^6.17.2",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
