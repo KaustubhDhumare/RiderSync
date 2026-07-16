@@ -1,13 +1,21 @@
 // src/components/LocationInput.jsx
 import { useState, useEffect } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
-import axios from 'axios'; // 🔴 1. Import Axios
+import axios from 'axios';
 
-const LocationInput = ({ label, placeholder, onLocationSelect }) => {
+const LocationInput = ({ label, placeholder, onLocationSelect, externalValue }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  // 🔴 1. Force the internal input state to match the parent's injected GPS value
+  useEffect(() => {
+    if (externalValue) {
+      setQuery(externalValue);
+      setShowDropdown(false); // Keep the dropdown closed when GPS auto-fills
+    }
+  }, [externalValue]);
 
   // Debounce the search so we don't spam the free API
   useEffect(() => {
@@ -15,7 +23,6 @@ const LocationInput = ({ label, placeholder, onLocationSelect }) => {
       if (query.length > 2 && showDropdown) {
         setIsSearching(true);
         try {
-          // 🔴 2. Cleaner Axios GET request with params object
           const res = await axios.get('https://nominatim.openstreetmap.org/search', {
             params: {
               format: 'json',
@@ -24,7 +31,6 @@ const LocationInput = ({ label, placeholder, onLocationSelect }) => {
             }
           });
           
-          // Axios automatically parses JSON into res.data
           setSuggestions(res.data);
         } catch (error) {
           console.error("Geocoding error:", error);
@@ -34,19 +40,17 @@ const LocationInput = ({ label, placeholder, onLocationSelect }) => {
       } else {
         setSuggestions([]);
       }
-    }, 500); // Wait 500ms after they stop typing
+    }, 500); 
 
     return () => clearTimeout(delayDebounceFn);
   }, [query, showDropdown]);
 
   const handleSelect = (place) => {
-    // Format the display name to be shorter (usually City, State)
     const shortName = place.display_name.split(',').slice(0, 3).join(',');
     
     setQuery(shortName);
     setShowDropdown(false);
     
-    // Send the exact data structure your backend schema demands
     onLocationSelect({
       name: shortName,
       coords: {
@@ -58,7 +62,9 @@ const LocationInput = ({ label, placeholder, onLocationSelect }) => {
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-textMuted mb-2">{label}</label>
+      {/* 🔴 2. Only render the label if it exists, preventing empty UI gaps */}
+      {label && <label className="block text-sm font-medium text-textMuted mb-2">{label}</label>}
+      
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <MapPin className="h-5 w-5 text-textMuted" />

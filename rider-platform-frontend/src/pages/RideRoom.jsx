@@ -20,6 +20,8 @@ import {
   Edit,
   X,
   Activity,
+  Maximize,
+  Minimize,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -50,6 +52,7 @@ const RideRoom = () => {
   const searchTimeout = useRef(null);
 
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
     startLocation: "",
@@ -104,11 +107,14 @@ const RideRoom = () => {
       const myId = (user._id || user.id).toString();
 
       // 1. Listen for ride completion (Completely separate from location updates)
-      socket.on("rideCompleted", () => {
-        toast.success("Ride completed! Routing you to History.");
-        setTimeout(() => {
-          navigate("/history", { state: { refreshStats: true } });
-        }, 1500); // 1.5 second delay so they can read the toast before routing
+      socket.on("rideCompleted", (completedRoomCode) => {
+        // Prevent ghost triggers from other rooms
+        if (!completedRoomCode || completedRoomCode === roomCode) {
+          toast.success("Ride completed! Routing you to History.");
+          setTimeout(() => {
+            navigate("/history", { state: { refreshStats: true } });
+          }, 1500);
+        }
       });
 
       // 2. Listen for location updates
@@ -196,6 +202,7 @@ const RideRoom = () => {
         clearInterval(heartbeatInterval);
         socket.emit("leaveRoom", roomCode);
         socket.off("locationUpdate");
+        socket.off("rideCompleted");
       };
     }
   }, [socket, roomCode, ride, user]);
@@ -225,7 +232,7 @@ const RideRoom = () => {
       if (!isCreator) {
         const token = localStorage.getItem("token");
         if (token) {
-          fetch(`http://localhost:5000/api/rides/${roomCode}/leave`, {
+          fetch(`${process.env.VITE_API_URL}/api/rides/${roomCode}/leave`, {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
             keepalive: true,
@@ -237,26 +244,6 @@ const RideRoom = () => {
     window.addEventListener("beforeunload", handleTabClose);
     return () => window.removeEventListener("beforeunload", handleTabClose);
   }, [roomCode, isCreator]);
-  //old
-  // const handleUpdateStatus = async (newStatus) => {
-  //   if (
-  //     !window.confirm(
-  //       `Are you sure you want to change this ride to ${newStatus}?`,
-  //     )
-  //   )
-  //     return;
-  //   setIsUpdating(true);
-  //   try {
-  //     const updatedRide = await rideApi.updateRide(ride._id, {
-  //       status: newStatus,
-  //     });
-  //     setRide(updatedRide);
-  //   } catch (err) {
-  //     alert("Failed to update status.");
-  //   } finally {
-  //     setIsUpdating(false);
-  //   }
-  // };
 
   const handleUpdateStatus = async (newStatus) => {
     if (
@@ -636,7 +623,29 @@ const RideRoom = () => {
       </div>
 
       {/* RIGHT PANEL: Live Map */}
-      <div className="w-full lg:w-2/3 h-[50vh] lg:h-full bg-surface rounded-2xl border border-surface/50 overflow-hidden shadow-xl relative z-0">
+      <div
+        className={
+          isFullscreen
+            ? "fixed inset-0 z-50 w-screen h-[100dvh] bg-surface"
+            : "w-full lg:w-2/3 h-[50vh] lg:h-full bg-surface rounded-2xl border border-surface/50 overflow-hidden shadow-xl relative z-0"
+        }
+      >
+        {/* Fullscreen Toggle Button */}
+        <button
+          onClick={() => {
+            setIsFullscreen(!isFullscreen);
+            // 🔴 THE LEAFLET HACK: Force Leaflet to recalculate tile sizes after the CSS transition
+            setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
+          }}
+          className="absolute top-4 right-4 z-[1000] bg-background/90 backdrop-blur-sm border border-surface p-2.5 rounded-xl text-textMain hover:text-primary transition-all shadow-xl"
+        >
+          {isFullscreen ? (
+            <Minimize className="h-5 w-5" />
+          ) : (
+            <Maximize className="h-5 w-5" />
+          )}
+        </button>
+
         <MapContainer
           center={[
             ride.startLocation.coords.lat,
@@ -832,7 +841,7 @@ const RideRoom = () => {
                   <input
                     type="number"
                     min="2"
-                    max="50"
+                    max="15" // 🔴 Locked this down from 50 to 15
                     value={editForm.maxRiders}
                     onChange={(e) =>
                       setEditForm({ ...editForm, maxRiders: e.target.value })
