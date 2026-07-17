@@ -67,6 +67,14 @@ const RideRoom = () => {
 
   const [riders, setRiders] = useState([]);
 
+  const [confirmAction, setConfirmAction] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    action: null,
+    btnClass: "",
+  });
+
   // Fetch Room Data
   useEffect(() => {
     const fetchRoomData = async () => {
@@ -245,31 +253,38 @@ const RideRoom = () => {
     return () => window.removeEventListener("beforeunload", handleTabClose);
   }, [roomCode, isCreator]);
 
-  const handleUpdateStatus = async (newStatus) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to change this ride to ${newStatus}?`,
-      )
-    )
-      return;
-    setIsUpdating(true);
-    try {
-      const updatedRide = await rideApi.updateRide(ride._id, {
-        status: newStatus,
-      });
-      setRide(updatedRide);
+  // 🔴 REPLACED: Status Update Logic with Custom Modal & Toasts
+  const promptStatusUpdate = (newStatus) => {
+    setConfirmAction({
+      isOpen: true,
+      title: newStatus === "active" ? "Start Ride?" : "Complete Ride?",
+      message: `Are you sure you want to mark this ride as ${newStatus}?`,
+      btnClass:
+        newStatus === "active"
+          ? "bg-amber-500 hover:bg-amber-600 text-white"
+          : "bg-green-500 hover:bg-green-600 text-white",
+      action: async () => {
+        setConfirmAction((prev) => ({ ...prev, isOpen: false }));
+        setIsUpdating(true);
+        try {
+          const updatedRide = await rideApi.updateRide(ride._id, {
+            status: newStatus,
+          });
+          setRide(updatedRide);
 
-      // 🔴 TELL ALL RIDERS TO GO TO HISTORY
-      if (newStatus === "completed") {
-        socket.emit("rideCompleted", roomCode);
-        navigate("/history", { state: { refreshStats: true } });
-      }
-    } catch (err) {
-      alert("Failed to update status.");
-    } finally {
-      setIsUpdating(false);
-    }
+          if (newStatus === "completed") {
+            socket.emit("rideCompleted", roomCode);
+            navigate("/history", { state: { refreshStats: true } });
+          }
+        } catch (err) {
+          toast.error("Failed to update status.");
+        } finally {
+          setIsUpdating(false);
+        }
+      },
+    });
   };
+
   const openEditModal = () => {
     setEditForm({
       name: ride.name,
@@ -429,21 +444,26 @@ const RideRoom = () => {
     }
   };
 
-  const handleDeleteRide = async () => {
-    if (
-      !window.confirm(
-        "WARNING: This will permanently delete the room. Proceed?",
-      )
-    )
-      return;
-    setIsUpdating(true);
-    try {
-      await rideApi.deleteRide(ride._id);
-      navigate("/dashboard");
-    } catch (err) {
-      alert("Failed to delete ride.");
-      setIsUpdating(false);
-    }
+  // 🔴 REPLACED: Delete Logic with Custom Modal & Toasts
+  const promptDelete = () => {
+    setConfirmAction({
+      isOpen: true,
+      title: "Delete Ride Room?",
+      message:
+        "WARNING: This will permanently delete the room and all its data. This cannot be undone. Proceed?",
+      btnClass: "bg-red-500 hover:bg-red-600 text-white",
+      action: async () => {
+        setConfirmAction((prev) => ({ ...prev, isOpen: false }));
+        setIsUpdating(true);
+        try {
+          await rideApi.deleteRide(ride._id);
+          navigate("/dashboard");
+        } catch (err) {
+          toast.error("Failed to delete ride.");
+          setIsUpdating(false);
+        }
+      },
+    });
   };
 
   const handleCopyCode = () => {
@@ -523,7 +543,7 @@ const RideRoom = () => {
         </div>
 
         {/* 🔴 CREATOR ADMIN PANEL - NOW DYNAMIC! */}
-        {isCreator && (
+        {/* {isCreator && (
           <div className="shrink-0 bg-red-500/5 border border-red-500/20 rounded-2xl p-4 shadow-lg">
             <div className="flex gap-2">
               <button
@@ -535,7 +555,7 @@ const RideRoom = () => {
 
               {ride.status === "upcoming" && (
                 <button
-                  onClick={() => handleUpdateStatus("active")}
+                  onClick={() => promptStatusUpdate("active")}
                   disabled={isUpdating}
                   className="flex-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 font-bold py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs border border-amber-500/30"
                 >
@@ -545,7 +565,53 @@ const RideRoom = () => {
 
               {ride.status === "active" && (
                 <button
-                  onClick={() => handleUpdateStatus("completed")}
+                  onClick={() => promptStatusUpdate("completed")}
+                  disabled={isUpdating}
+                  className="flex-1 bg-green-500/20 hover:bg-green-500/30 text-green-500 font-bold py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs border border-green-500/30"
+                >
+                  <CheckCircle className="h-3.5 w-3.5" /> Complete
+                </button>
+              )}
+              {ride.status !== "completed" && (
+              <button
+                onClick={promptDelete}
+                disabled={isUpdating}
+                className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-500 font-bold py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs border border-red-500/30"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </button>
+              )}
+            </div>
+          </div>
+        )} */}
+
+        {/* 🔴 CREATOR ADMIN PANEL - NOW DYNAMIC! */}
+        {isCreator && (
+          <div className="shrink-0 bg-red-500/5 border border-red-500/20 rounded-2xl p-4 shadow-lg flex flex-col">
+            <div className="flex gap-2">
+              {/* Hide Edit if completed */}
+              {ride.status !== "completed" && (
+                <button
+                  onClick={openEditModal}
+                  className="flex-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 font-bold py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-xs border border-blue-500/30"
+                >
+                  <Edit className="h-3.5 w-3.5" /> Edit
+                </button>
+              )}
+
+              {ride.status === "upcoming" && (
+                <button
+                  onClick={() => promptStatusUpdate("active")}
+                  disabled={isUpdating}
+                  className="flex-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 font-bold py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs border border-amber-500/30"
+                >
+                  <Activity className="h-3.5 w-3.5" /> Start Ride
+                </button>
+              )}
+
+              {ride.status === "active" && (
+                <button
+                  onClick={() => promptStatusUpdate("completed")}
                   disabled={isUpdating}
                   className="flex-1 bg-green-500/20 hover:bg-green-500/30 text-green-500 font-bold py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs border border-green-500/30"
                 >
@@ -553,14 +619,24 @@ const RideRoom = () => {
                 </button>
               )}
 
-              <button
-                onClick={handleDeleteRide}
-                disabled={isUpdating}
-                className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-500 font-bold py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs border border-red-500/30"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Delete
-              </button>
+              {/* Hide Delete if completed */}
+              {ride.status !== "completed" && (
+                <button
+                  onClick={promptDelete}
+                  disabled={isUpdating}
+                  className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-500 font-bold py-1.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs border border-red-500/30"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                </button>
+              )}
             </div>
+
+            {/* Show a locked message if completed */}
+            {ride.status === "completed" && (
+              <p className="text-xs text-textMuted text-center font-bold mt-2">
+                This ride is completed and archived.
+              </p>
+            )}
           </div>
         )}
 
@@ -655,7 +731,12 @@ const RideRoom = () => {
           style={{ height: "100%", width: "100%" }}
           zoomControl={false}
         >
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            keepBuffer={4}
+            updateWhenZooming={false}
+            updateWhenIdle={true}
+          />
 
           {riders.length > 0 ? (
             riders.map((rider) => (
@@ -864,6 +945,41 @@ const RideRoom = () => {
                 )}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 🔴 CUSTOM CONFIRMATION MODAL */}
+      {confirmAction.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-surface border border-surface/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-xl font-bold text-textMain mb-2">
+              {confirmAction.title}
+            </h3>
+            <p className="text-sm text-textMuted mb-6">
+              {confirmAction.message}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() =>
+                  setConfirmAction((prev) => ({ ...prev, isOpen: false }))
+                }
+                disabled={isUpdating}
+                className="flex-1 py-2.5 bg-background border border-surface rounded-xl text-textMain font-bold hover:bg-surface transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAction.action}
+                disabled={isUpdating}
+                className={`flex-1 py-2.5 rounded-xl font-bold transition-all shadow-lg disabled:opacity-50 flex justify-center items-center ${confirmAction.btnClass}`}
+              >
+                {isUpdating ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  "Confirm"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
